@@ -1,0 +1,227 @@
+<html>
+<head>
+    <link rel="stylesheet" href="style.css"/>
+    <title>
+        MFAK - Jurkiw_Verlet
+    </title>
+</head>
+<body>
+    <canvas id="Verlet" width="1024" height="768"></canvas>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</body>
+<script>
+
+var canvas = document.getElementById("Verlet");
+var ctx = canvas.getContext("2d");
+var W = 1024;
+var H = 768;
+var springs = new Array(2);
+var arrow;
+var mouseClick = false;
+var mouseX;
+var mouseY;
+var action = false;
+var xRownowagi = 300;
+var yRownowagi = 350;
+var points = new Array(2);
+var mass;
+var k = 2;
+var damping = 8;
+
+var background = new Image();
+background.src = "back.jpg";
+
+background.onload = function(){
+    ctx.drawImage(background,0,0);   
+}
+
+
+var dt = 0.2;
+
+class Spring{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+        this.r = 10;
+    }
+}
+
+class Mass{
+    constructor(x,y){
+        this.x = new Array(3);
+        this.Fx0 = 0;
+        this.Fx = 0;
+        this.Vx = 0;
+        this.x[0] = x;
+        this.m = 10;
+        this.dampingx = 0;
+    }
+
+    update()
+    {
+        this.Fx0 = this.Fx;
+        this.x[0] = this.x[1];
+        this.x[1] = this.x[2];
+        this.Vx = (mass.x[1] - mass.x[0])/dt;
+        this.dampingx = damping * this.Vx;
+        this.Fx = -k * (this.x[1] - springs[0].x) - this.dampingx;
+        this.x[2] = (2 * this.x[1]) - this.x[0] + (dt *dt * this.Fx / this.m);   
+
+        ctx.beginPath();
+        ctx.moveTo(springs[0].x, springs[0].y);
+        ctx.lineTo(this.x[0], yRownowagi);
+        ctx.moveTo(springs[1].x, springs[1].y);
+        ctx.lineTo(this.x[0], yRownowagi);
+        ctx.stroke();  
+    }
+}
+
+class Arrow{
+    constructor(x){
+        this.beginX = x;
+        this.beginY = yRownowagi;
+        this.endX = 300;
+        this.endY = yRownowagi;
+        this.ax = 0;
+        this.fx = 0;
+        this.Vx = 250;
+        this.m = 3;
+    }
+
+    addVelocity()
+    {
+        this.ax = this.fx / this.m;
+        this.vx = this.ax * dt;
+        this.beginX += this.Vx*dt;
+        this.endX += this.Vx*dt;
+    }
+
+    arrowDraw()
+    {
+        ctx.beginPath();
+        ctx.moveTo(arrow.endX, arrow.endY);
+        ctx.lineTo(arrow.beginX, arrow.beginY);
+        ctx.stroke(); 
+    }
+}
+
+function initialize()
+{
+    springs[0] = new Spring(255,245);
+    springs[1] = new Spring(255,455);
+}
+
+function drawSprings()
+{
+    ctx.beginPath();
+    ctx.arc(springs[0].x, springs[0].y, springs[0].r, 0, 2*Math.PI);
+    //ctx.fillRect(springs[0].x,springs[0].y,1,1);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(springs[1].x, springs[1].y, springs[1].r, 0, 2*Math.PI);
+    //ctx.fillRect(springs[1].x,springs[1].y,1,1);
+    ctx.stroke();
+
+    // ctx.beginPath();
+    // ctx.arc(255, yRownowagi, springs[1].r, 0, 2*Math.PI);
+    // //ctx.fillRect(springs[1].x,springs[1].y,1,1);
+    // ctx.stroke();
+
+    // ctx.beginPath();
+    // ctx.arc(xRownowagi, yRownowagi, springs[1].r, 0, 2*Math.PI);
+    // //ctx.fillRect(springs[1].x,springs[1].y,1,1);
+    // ctx.stroke();
+}
+
+function drawBow()
+{
+    let startAngle=(-Math.PI/2)+(Math.PI/4);
+    let endAngle=Math.PI/4;
+    ctx.beginPath();
+    ctx.arc(150,350,150,startAngle,endAngle);
+    ctx.strokeStyle='black';
+    ctx.stroke();
+    if(!mouseClick)
+    {
+        ctx.beginPath();
+        ctx.moveTo(springs[0].x, springs[0].y);
+        ctx.lineTo(springs[1].x, springs[1].y);
+        ctx.stroke();
+    }
+}
+
+$(canvas).mousemove(function(e) {
+
+    mouseX = e.pageX;
+    mouseY = e.pageY;
+
+});
+
+$(canvas).mousedown(function() {
+
+    if(mouseX <= 264)
+    {
+        let x = mouseX;
+        arrow = new Arrow(x);
+        ctx.beginPath();
+        ctx.moveTo(arrow.endX, arrow.endY);
+        ctx.lineTo(mouseX, arrow.beginY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(springs[0].x, springs[0].y);
+        ctx.lineTo(mouseX, arrow.beginY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(springs[1].x, springs[1].y);
+        ctx.lineTo(mouseX, arrow.beginY);
+        ctx.stroke();
+        mouseClick = true;
+        mass = new Mass(x, yRownowagi);
+        mass.Fx0 = -k * (mass.x[0] - springs[0].x);
+        arrow.fx = mass.Fx0;
+        ctx.beginPath();
+        ctx.moveTo(springs[0].x, springs[0].y);
+        ctx.lineTo(mass.x[0], yRownowagi);
+        ctx.moveTo(springs[1].x, springs[1].y);
+        ctx.lineTo(mass.x[0], yRownowagi);
+        ctx.stroke();  
+
+        mass.x[1] = mass.x[0] * (dt * dt * mass.Fx0 / mass.m)
+        mass.Vx = (mass.x[1] - mass.x[0])/dt;
+        mass.dampingx = damping * mass.Vx;
+        mass.Fx = -k * (mass.x[1] - springs[0].x) - mass.dampingx;
+        mass.x[2] = (2 * mass.x[1]) - mass.x[0] + (dt *dt * mass.Fx / mass.m);  
+   }
+
+});
+
+$(canvas).mouseup(function() {
+    if(mouseClick)
+    {   
+        action = true;
+    }
+});
+
+
+
+function draw()
+{
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(background,0,0); 
+    drawBow();
+    drawSprings();
+    if(action)
+    {
+        arrow.addVelocity();
+        arrow.arrowDraw();
+        mass.update();
+    }
+    
+}
+
+initialize();
+setInterval(draw,20);
+
+</script>
+</html>
